@@ -234,6 +234,9 @@ class SalesInvoice(SellingController):
 		self.calculate_taxes_and_totals()
 
 	def before_save(self):
+		for i in range(len(self.items)):
+			if(self.items[i].rate):
+				self.items[i].gross_profit = ((self.items[i].rate - self.items[i].cost_price)/self.items[i].rate) * 100
 		set_account_for_mode_of_payment(self)
 
 	def on_submit(self):
@@ -2565,3 +2568,12 @@ def check_if_return_invoice_linked_with_payment_entry(self):
 			message += " " + ", ".join(payment_entries_link) + " "
 			message += _("to unallocate the amount of this Return Invoice before cancelling it.")
 			frappe.throw(message)
+@frappe.whitelist()  
+def get_cost(item, pos, posting_date, posting_time,warehouse):
+	if frappe.db.get_value("Item", {"name":item}, ['is_stock_item']):
+		if(pos =="1"):
+			warehouse = frappe.db.get_value("POS Profile", {'name':warehouse},["warehouse"])
+		cost = frappe.db.sql('''select valuation_rate from `tabStock Ledger Entry` where item_code=%s and warehouse=%s and posting_date<=%s order by posting_date desc, creation desc limit 1''', (item,warehouse, posting_date))
+		if len(cost):
+			return cost[0][0]  
+		return 0

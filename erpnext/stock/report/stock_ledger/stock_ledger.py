@@ -61,6 +61,9 @@ def execute(filters=None):
 			conversion_factors.append(item_detail.conversion_factor)
 
 	update_included_uom_in_report(columns, data, include_uom, conversion_factors)
+	for i in range(len(data)):
+		if data[i]["voucher_type"] != "Stock Reconciliation":
+			data[i]["rate"] = frappe.db.get_value(data[i]["voucher_type"]+" Item", {"item_code":data[i]["item_code"],"parent":data[i]["voucher_no"]}, "rate")
 	return columns, data
 
 
@@ -165,6 +168,13 @@ def get_columns():
 		{
 			"label": _("Valuation Rate"),
 			"fieldname": "valuation_rate",
+			"fieldtype": "Currency",
+			"width": 110,
+			"options": "Company:company:default_currency",
+			"convertible": "rate",
+		},
+		{   "label": _("Rate"),
+		    "fieldname": "rate",
 			"fieldtype": "Currency",
 			"width": 110,
 			"options": "Company:company:default_currency",
